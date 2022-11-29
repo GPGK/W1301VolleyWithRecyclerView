@@ -10,9 +10,10 @@ import com.android.volley.RequestQueue
 import com.android.volley.toolbox.JsonArrayRequest
 import com.android.volley.toolbox.Volley
 import org.json.JSONArray
+import org.json.JSONObject
 
 class SongViewModel(application: Application) : AndroidViewModel(application) {
-    data class Song(var id: Int, var title: String, var singer: String)
+    data class Song (var id: Int, var title: String, var singer: String)
 
     companion object {
         const val QUEUE_TAG = "SongVolleyRequest"
@@ -31,23 +32,38 @@ class SongViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun requestSong() {
+        // NOTE: 서버 주소는 본인의 서버 IP 사용할 것
+        val url = "https://expresssongdb-inhbm.run.goorm.io/song"
+
+        // Array를 반환할 경우에는 JsonObjectRequest 대신 JsonArrayRequest 사용
         val request = JsonArrayRequest(
             Request.Method.GET,
-            "https://expresssongdb-rwhxi.run.goorm.io/song",
+            url,
             null,
             {
-                Toast.makeText(getApplication(),
-                    it.toString(),
-                    Toast.LENGTH_LONG).show()
+                Toast.makeText(getApplication(), it.toString(), Toast.LENGTH_LONG).show()
+                songs.clear()
+                parseJson(it)
+                _list.value = songs
             },
             {
-                Toast.makeText(getApplication(),
-                    it.toString(),
-                    Toast.LENGTH_LONG).show()
+                Toast.makeText(getApplication(), it.toString(), Toast.LENGTH_LONG).show()
             }
         )
+
         request.tag = QUEUE_TAG
         queue.add(request)
+    }
+
+    private fun parseJson(items: JSONArray) {
+        for (i in 0 until items.length()) {
+            val item: JSONObject = items[i] as JSONObject
+            val id = item.getInt("id")
+            val title = item.getString("title")
+            val singer = item.getString("singer")
+
+            songs.add(Song(id, title, singer))
+        }
     }
 
     override fun onCleared() {
